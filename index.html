@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f4e78">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="styles.css">
+<title>Mis Finanzas</title>
+</head>
+<body>
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="logo">$</div><h1>Mis Finanzas</h1><p>Control PEN + USD</p>
+    <form id="loginForm">
+      <label>Correo<input id="email" type="email" autocomplete="email" required></label>
+      <label>Contraseña<input id="password" type="password" autocomplete="current-password" required></label>
+      <button class="primary">Ingresar</button>
+      <div id="loginMsg" class="error"></div>
+    </form>
+  </div>
+</div>
+<div id="app" hidden>
+<header><div><b>Mis Finanzas</b><small>PEN + USD · nube</small></div><button id="logout">Salir</button></header>
+<main>
+<section id="dashboard" class="screen active">
+<div class="month"><button id="prev">‹</button><input id="month" type="month"><button id="next">›</button></div>
+<div class="cards">
+<div class="card in"><span>INGRESOS</span><b id="ip"></b><small id="iu"></small></div>
+<div class="card out"><span>GASTOS</span><b id="gp"></b><small id="gu"></small></div>
+<div class="card bal"><span>SALDO DEL MES</span><b id="bp"></b><small id="bu"></small></div>
+<div class="card sav"><span>AHORRO %</span><b id="sp"></b><small id="su"></small></div>
+</div>
+<div class="panel"><h3>Saldo acumulado</h3><div class="grid2">
+<div>Inicial PEN<b id="op"></b></div><div>Final PEN<b id="cp"></b></div>
+<div>Inicial USD<b id="ou"></b></div><div>Final USD<b id="cu"></b></div>
+</div></div>
+<div class="panel"><h3>Tipo de cambio</h3><div class="grid2"><div>Compra<b id="buy"></b></div><div>Venta<b id="sell"></b></div></div></div>
+<div class="actions"><button class="primary" data-go="income">＋ Ingreso</button><button class="danger" data-go="expense">－ Gasto</button></div>
+<div class="panel"><h3>Gastos por categoría</h3><div id="cats"></div></div>
+<div class="panel"><h3>Gastos recurrentes</h3><div id="recs"></div></div>
+</section>
+
+<section id="income" class="screen"><h2>Registrar ingreso</h2>
+<form id="incomeForm">
+<label>Fecha<input id="incomeDate" type="date" required></label>
+<label>Concepto<select id="incomeCat"><option>Sueldo</option><option>Negocio</option><option>Freelance</option><option>Otros ingresos</option></select></label>
+<label>Moneda<select id="incomeCur"><option>PEN</option><option>USD</option></select></label>
+<label>Monto<input id="incomeAmount" type="number" min="0" step=".01" required></label>
+<label>Cuenta<input id="incomeAccount" placeholder="Banco, efectivo, cuenta USD"></label>
+<label>Descripción<input id="incomeDesc"></label>
+<label class="check"><input id="incomeTax" type="checkbox"> Aplicar impuesto de sueldo 8%</label>
+<div id="incomePreview" class="notice"></div>
+<button class="primary">Guardar ingreso</button>
+</form></section>
+
+<section id="expense" class="screen"><h2>Registrar gasto</h2>
+<form id="expenseForm">
+<label>Fecha<input id="expenseDate" type="date" required></label>
+<label>Categoría<select id="expenseCat"><option>Vivienda</option><option>Alimentación</option><option>Transporte</option><option>Salud</option><option>Educación</option><option>Entretenimiento</option><option>Compras</option><option>Finanzas</option><option>Ahorro</option><option>Otros</option></select></label>
+<label>Moneda<select id="expenseCur"><option>PEN</option><option>USD</option></select></label>
+<label>Monto<input id="expenseAmount" type="number" min="0" step=".01" required></label>
+<label>Medio de pago<select id="expenseMethod"><option>Débito</option><option>Crédito</option><option>Transferencia</option><option>Efectivo</option><option>Yape/Plin</option><option>Otro</option></select></label>
+<label>Cuenta<input id="expenseAccount"></label>
+<label>Descripción<input id="expenseDesc"></label>
+<label class="check"><input id="expenseRecurring" type="checkbox"> Gasto recurrente</label>
+<button class="danger">Guardar gasto</button>
+</form></section>
+
+<section id="recurring" class="screen"><h2>Gastos recurrentes</h2>
+<form id="recurringForm"><label>Concepto<input id="recName" required></label><label>Categoría<input id="recCat" required></label><label>Moneda<select id="recCur"><option>PEN</option><option>USD</option></select></label><label>Monto mensual<input id="recAmount" type="number" min="0" step=".01" required></label><label>Día de pago<input id="recDay" type="number" min="1" max="31" value="1"></label><button class="primary">Agregar</button></form>
+<div id="recList"></div></section>
+
+<section id="reports" class="screen"><h2>Movimientos</h2><div class="filters"><input id="reportMonth" type="month"><select id="reportType"><option value="">Todos</option><option>Ingreso</option><option>Gasto</option></select></div><div id="moves"></div></section>
+
+<section id="settings" class="screen"><h2>Configuración</h2>
+<form id="settingsForm"><label>Tipo de cambio compra<input id="settingBuy" type="number" step=".0001"></label><label>Tipo de cambio venta<input id="settingSell" type="number" step=".0001"></label><label>Objetivo anual de ahorro USD<input id="settingGoal" type="number" step=".01"></label><button class="primary">Guardar</button></form>
+<div class="notice">Los datos se sincronizan con tu cuenta de Supabase.</div></section>
+</main>
+<nav><button data-go="dashboard">⌂<small>Inicio</small></button><button data-go="income">＋<small>Ingreso</small></button><button data-go="expense">−<small>Gasto</small></button><button data-go="reports">☷<small>Movimientos</small></button><button data-go="settings">⚙<small>Config.</small></button></nav>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js?v=2"></script>
+</body></html>
