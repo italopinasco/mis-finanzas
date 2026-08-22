@@ -1,0 +1,1 @@
+MIS FINANZAS v6 — entidades, cuentas y categorías conectadas a Supabase; mantiene login, dashboard, reportes, PEN/USD y sincronización.
