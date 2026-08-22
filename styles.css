@@ -25,6 +25,3 @@ nav{grid-template-columns:repeat(6,1fr)}
 nav button{font-size:16px}
 .sync-ok{color:#d9f7df}.sync-bad{color:#ffe0e0}
 .toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:50;background:#263238;color:#fff;padding:11px 15px;border-radius:10px;box-shadow:0 4px 15px #0003;font-size:13px;max-width:90%;text-align:center}
-
-nav{grid-template-columns:repeat(6,1fr)}
-.settings-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid #edf0f2}.smallbtn{padding:6px 8px;font-size:11px}

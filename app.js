@@ -3,7 +3,7 @@ const SUPABASE_KEY="sb_publishable_lThI_nQBiQtNIpBZJWPWMg_dO7EqEZA";
 const {createClient}=window.supabase;
 const db=createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
-let session=null, user=null, movements=[], recurringRecords=[], entities=[], accounts=[], categories=[], subcategories=[], config={buy:3.5,sell:3.55,goal:0};
+let session=null, user=null, movements=[], recurringRecords=[], config={buy:3.5,sell:3.55,goal:0};
 const today=new Date();
 const pad=n=>String(n).padStart(2,"0");
 const monthKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
@@ -27,26 +27,30 @@ function setSync(text,ok){const el=document.getElementById("syncStatus");if(el){
 function toast(text){let t=document.getElementById("toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t);}t.textContent=text;t.hidden=false;clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.hidden=true,2600);}
 
 async function loadData(){
- setSync("Sincronizando…",false);
- const [m,r,e,a,c,s,cfg]=await Promise.all([
-  db.from("movimientos").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}),
-  db.from("gastos_recurrentes").select("*").eq("activo",true).order("concepto"),
-  db.from("entidades").select("*").eq("activa",true).order("nombre"),
-  db.from("cuentas").select("*").eq("activa",true).order("nombre"),
-  db.from("categorias").select("*").eq("activa",true).order("nombre"),
-  db.from("subcategorias").select("*").eq("activa",true).order("nombre"),
-  db.from("configuracion").select("*").eq("user_id",user.id).maybeSingle()
- ]);
- for(const x of [m,r,e,a,c,s,cfg]) if(x.error) throw x.error;
- movements=m.data||[]; recurringRecords=r.data||[]; entities=e.data||[]; accounts=a.data||[]; categories=c.data||[]; subcategories=s.data||[];
- const cc=cfg.data;
- if(!cc){
-  const {data:nc,error}=await db.from("configuracion").insert({user_id:user.id,tipo_cambio_compra:3.5,tipo_cambio_venta:3.55,objetivo_ahorro_usd:0}).select().single();
-  if(error) throw error;
-  config={buy:Number(nc.tipo_cambio_compra),sell:Number(nc.tipo_cambio_venta),goal:Number(nc.objetivo_ahorro_usd)};
- }else config={buy:Number(cc.tipo_cambio_compra),sell:Number(cc.tipo_cambio_venta),goal:Number(cc.objetivo_ahorro_usd)};
- fillConfig(); renderAccountSelectors(); renderCategorySelectors(); renderEntityList(); renderAccountList(); renderCategoryList();
- renderDashboard(); renderMovements(); renderRecurring(); renderReports(); setSync("● Sincronizado",true);
+  setSync("Sincronizando…",false);
+  const {data:m,error:me}=await db.from("movimientos").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false});
+  if(me)throw me;
+  movements=m||[];
+  const {data:r,error:recurErr}=await db.from("gastos_recurrentes").select("*").eq("activo",true).order("concepto");
+  if(recurErr)throw recurErr;
+  recurringRecords=r||[];
+  const {data:c,error:ce}=await db.from("configuracion").select("*").eq("user_id",user.id).maybeSingle();
+  if(ce)throw ce;
+  if(!c){
+    const {data:newc,error:ie}=await db.from("configuracion").insert({
+      user_id:user.id,tipo_cambio_compra:3.5,tipo_cambio_venta:3.55,objetivo_ahorro_usd:0
+    }).select().single();
+    if(ie)throw ie;
+    config={buy:Number(newc.tipo_cambio_compra),sell:Number(newc.tipo_cambio_venta),goal:Number(newc.objetivo_ahorro_usd)};
+  }else{
+    config={buy:Number(c.tipo_cambio_compra),sell:Number(c.tipo_cambio_venta),goal:Number(c.objetivo_ahorro_usd)};
+  }
+  fillConfig();
+  renderDashboard();
+  renderMovements();
+  renderRecurring();
+  renderReports();
+  setSync("● Sincronizado",true);
 }
 
 function monthRows(m){return movements.filter(x=>String(x.fecha).slice(0,7)===m)}
@@ -86,29 +90,6 @@ function renderReports(){
   document.getElementById("reportCategories").innerHTML=Object.entries(cat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="item"><span>${k}</span><b>${fmt(v,"USD")}</b></div>`).join("")||'<span class="muted">Sin gastos este mes.</span>';
   const ms=[...new Set(movements.map(x=>String(x.fecha).slice(0,7)))].sort().slice(-6).reverse();
   document.getElementById("monthlyComparison").innerHTML=ms.map(k=>{const z=monthly(k);return `<div class="item"><span>${k}<small class="muted">Saldo del mes</small></span><b>${fmt(z.bu,"USD")}</b></div>`}).join("")||'<span class="muted">Aún no hay historial.</span>';
-}
-
-function renderAccountSelectors(){
- const opts=accounts.map(a=>`<option value="${a.id}">${a.nombre} · ${a.moneda}</option>`).join("");
- const ie=document.getElementById("incomeAccount"); if(ie && ie.tagName==="INPUT") ie.outerHTML=`<select id="incomeAccount">${opts}</select>`;
- const ee=document.getElementById("expenseAccount"); if(ee && ee.tagName==="INPUT") ee.outerHTML=`<select id="expenseAccount">${opts}</select>`;
- const ae=document.getElementById("accountEntity"); if(ae) ae.innerHTML=entities.map(x=>`<option value="${x.id}">${x.nombre}</option>`).join("");
-}
-function renderCategorySelectors(){
- const ec=document.getElementById("expenseCategory");
- if(ec) ec.innerHTML=categories.map(c=>`<option value="${c.nombre}">${c.nombre}</option>`).join("");
-}
-function renderEntityList(){
- const b=document.getElementById("entityList"); if(!b)return;
- b.innerHTML=entities.map(x=>`<div class="settings-row"><span><b>${x.nombre}</b><small class="muted"> · ${x.tipo}</small></span></div>`).join("")||'<span class="muted">Sin entidades.</span>';
-}
-function renderAccountList(){
- const b=document.getElementById("accountList"); if(!b)return;
- b.innerHTML=accounts.map(x=>`<div class="settings-row"><span><b>${x.nombre}</b><small class="muted"> · ${x.moneda} · ${x.uso}</small></span></div>`).join("")||'<span class="muted">Sin cuentas.</span>';
-}
-function renderCategoryList(){
- const b=document.getElementById("categoryList"); if(!b)return;
- b.innerHTML=categories.map(x=>`<div class="settings-row"><b>${x.nombre}</b></div>`).join("")||'<span class="muted">Sin categorías.</span>';
 }
 
 function renderDashboard(){
@@ -187,9 +168,6 @@ movementList.addEventListener("click",async e=>{
 recurringForm.addEventListener("submit",async e=>{e.preventDefault();try{setSync("Guardando…",false);const {error}=await db.from("gastos_recurrentes").insert({user_id:user.id,concepto:recurringName.value,categoria:recurringCategory.value,moneda:recurringCurrency.value,monto:Number(recurringAmount.value),dia_pago:Number(recurringDay.value),activo:true});if(error)throw error;e.target.reset();await loadData();setScreen("recurring");toast("Gasto recurrente guardado");}catch(err){setSync("Error de sincronización",false);alert("No se pudo guardar: "+(err.message||err));}});
 recurringList.addEventListener("click",async e=>{const b=e.target.closest(".delete-recurring");if(!b)return;if(!confirm("¿Eliminar este gasto recurrente?"))return;try{setSync("Guardando…",false);const {error}=await db.from("gastos_recurrentes").delete().eq("id",b.dataset.id);if(error)throw error;await loadData();toast("Gasto recurrente eliminado");}catch(err){setSync("Error de sincronización",false);alert(err.message||err);}});
 
-entityForm.addEventListener("submit",async e=>{e.preventDefault();try{const {error}=await db.from("entidades").insert({user_id:user.id,nombre:entityName.value.trim(),tipo:entityType.value,activa:true});if(error)throw error;e.target.reset();await loadData();toast("Entidad creada");}catch(err){alert(err.message||err)}});
-accountForm.addEventListener("submit",async e=>{e.preventDefault();try{const {error}=await db.from("cuentas").insert({user_id:user.id,entidad_id:accountEntity.value,nombre:accountName.value.trim(),moneda:accountCurrency.value,tipo:accountType.value,uso:accountUse.value,saldo_inicial:Number(accountOpening.value)||0,activa:true});if(error)throw error;e.target.reset();accountOpening.value="0";await loadData();toast("Cuenta creada");}catch(err){alert(err.message||err)}});
-categoryForm.addEventListener("submit",async e=>{e.preventDefault();try{const {error}=await db.from("categorias").insert({user_id:user.id,nombre:categoryName.value.trim(),activa:true});if(error)throw error;e.target.reset();await loadData();toast("Categoría creada");}catch(err){alert(err.message||err)}});
 settingsForm.addEventListener("submit",async e=>{
   e.preventDefault();
   try{
