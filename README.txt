@@ -1,1 +1,0 @@
-MIS FINANZAS v5 — dashboard PEN/USD, saldo acumulado, movimientos, recurrentes, reportes y sincronización Supabase.
