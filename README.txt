@@ -1,1 +1,0 @@
-Mis Finanzas v3: usa Supabase JS oficial, sesión segura, RLS y sincronización PEN/USD.
