@@ -1,2 +1,0 @@
-MIS FINANZAS v6.4
-Nuevo módulo de transferencias basado en public.transferencias. No convierte transferencias en ingresos/gastos. PEN↔USD usa venta/compra SBS por dirección y permite modificar el TC por operación.
