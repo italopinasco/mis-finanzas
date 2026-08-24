@@ -1,1 +1,0 @@
-MIS FINANZAS v6.2 — corrección de navegación: Configuración visible; conserva tipo de cambio automático BCRP/SBS y modo manual.
